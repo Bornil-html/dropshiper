@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const { query } = require('../utils/db');
 
 module.exports = async (req, res) => {
@@ -55,7 +56,6 @@ module.exports = async (req, res) => {
     `);
 
     // Add Admin if doesn't exist (hashed 'admin123')
-    const bcrypt = require('bcryptjs');
     const adminEmail = 'admin@dropship.com';
     const existing = await query('SELECT * FROM users WHERE email = $1', [adminEmail]);
     if (existing.rows.length === 0) {
