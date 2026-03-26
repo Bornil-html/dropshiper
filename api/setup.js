@@ -55,13 +55,18 @@ module.exports = async (req, res) => {
       );
     `);
 
-    // Add Admin if doesn't exist (hashed 'admin123')
+    // Add/Update Admin forcefully (hashed 'admin123')
     const adminEmail = 'admin@dropship.com';
+    const hash = await bcrypt.hash('admin123', 10);
     const existing = await query('SELECT * FROM users WHERE email = $1', [adminEmail]);
     if (existing.rows.length === 0) {
-      const hash = await bcrypt.hash('admin123', 10);
       await query('INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)', 
         ['Admin', adminEmail, hash, 'admin']);
+      console.log('Admin user created.');
+    } else {
+      await query('UPDATE users SET password = $1, role = $2 WHERE email = $3', 
+        [hash, 'admin', adminEmail]);
+      console.log('Admin user updated.');
     }
 
     // Seed products
