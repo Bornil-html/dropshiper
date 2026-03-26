@@ -7,11 +7,7 @@ if (!pool) {
     console.error('CRITICAL: DATABASE_URL is missing!');
   }
   pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    },
-    max: 1 // Crucial for Serverless to avoid overwhelming Neon
+    connectionString: process.env.DATABASE_URL
   });
 }
 
