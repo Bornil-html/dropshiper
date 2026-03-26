@@ -2,25 +2,30 @@ const { Pool } = require('pg');
 
 let pool;
 
-if (process.env.DATABASE_URL) {
+if (!pool) {
+  if (!process.env.DATABASE_URL) {
+    console.error('CRITICAL: DATABASE_URL is missing!');
+  }
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false
-    }
-  });
-} else {
-  // Mock pool or throw error in production. But Vercel sets DATABASE_URL
-  console.warn('DATABASE_URL is not defined in the environment!');
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://user:password@localhost/mydb'
+    },
+    max: 1 // Crucial for Serverless to avoid overwhelming Neon
   });
 }
 
 /**
  * Helper function to query the Postgres database
  */
-const query = (text, params) => pool.query(text, params);
+const query = async (text, params) => {
+  const client = await pool.connect();
+  try {
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+};
 
 module.exports = {
   query,
