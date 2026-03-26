@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cart - Nexus</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .cart-container { display: flex; gap: 40px; flex-wrap: wrap; }
+    .cart-items { flex: 2; min-width: 300px; }
+    .cart-summary { flex: 1; background: var(--card-bg); padding: 30px; border-radius: 20px; border: 1px solid var(--border-color); height: min-content; min-width: 300px; }
+    .remove-btn { color: var(--error); cursor: pointer; text-decoration: underline; font-size: 14px; background: none; border: none; padding: 0; }
+    .remove-btn:hover { background: none; color: darkred; transform: none; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="/" class="nav-logo">Nexus</a>
+      <div class="nav-links" id="nav-links"></div>
+    </div>
+  </nav>
+
+  <div class="container section fade-in">
+    <h1 style="margin-bottom: 24px;">Your Cart</h1>
+    <div class="cart-container" id="cart-content">
+      <p>Loading cart...</p>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!localStorage.getItem('token')) window.location.href = '/login.html';
+
+    async function loadCart() {
+      try {
+        const items = await window.api.getCart();
+        const container = document.getElementById('cart-content');
+        
+        if (items.length === 0) {
+          container.innerHTML = `<p style="font-size: 18px; width: 100%;">Your cart is empty. <a href="/products.html" style="color:var(--accent-color)">Continue shopping</a></p>`;
+          return;
+        }
+
+        let html = '<div class="cart-items">';
+        let total = 0;
+
+        items.forEach(item => {
+          total += item.price * item.quantity;
+          html += `
+            <div class="cart-item fade-in">
+              <img src="${item.image_url}" alt="${item.name}">
+              <div class="cart-item-details">
+                <h3>${item.name}</h3>
+                <p class="desc">${item.category}</p>
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                  <span>$${item.price} x ${item.quantity}</span>
+                  <button class="remove-btn" onclick="removeItem(${item.cart_item_id})">Remove</button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+
+        html += `
+          <div class="cart-summary fade-in">
+            <h3>Order Summary</h3>
+            <div style="display:flex; justify-content:space-between; margin: 20px 0;">
+              <span>Subtotal</span>
+              <strong>$${total.toFixed(2)}</strong>
+            </div>
+            <hr style="border:0; border-top:1px solid var(--border-color); margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom: 30px; font-size: 20px; font-weight: bold;">
+              <span>Total</span>
+              <span>$${total.toFixed(2)}</span>
+            </div>
+            <button style="width: 100%;" onclick="proceedToCheckout(${total.toFixed(2)})">Checkout</button>
+          </div>
+        `;
+
+        container.innerHTML = html;
+      } catch (err) {
+        window.showToast(err.message, true);
+        if(err.message === 'Unauthorized') window.location.href = '/login.html';
+      }
+    }
+
+    async function removeItem(id) {
+      try {
+        await window.api.removeFromCart(id);
+        loadCart();
+      } catch (err) {
+        window.showToast(err.message, true);
+      }
+    }
+
+    function proceedToCheckout(total) {
+      sessionStorage.setItem('checkoutTotal', total);
+      window.location.href = '/checkout.html';
+    }
+
+    loadCart();
+  </script>
+</body>
+</html>

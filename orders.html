@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Order History - Nexus</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="/" class="nav-logo">Nexus</a>
+      <div class="nav-links" id="nav-links"></div>
+    </div>
+  </nav>
+
+  <div class="container section fade-in">
+    <h1 style="margin-bottom: 24px;">Your Orders</h1>
+    <div id="orders-container">
+      <p>Loading orders...</p>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!localStorage.getItem('token')) window.location.href = '/login.html';
+
+    async function loadOrders() {
+      try {
+        const orders = await window.api.getOrders();
+        const container = document.getElementById('orders-container');
+        
+        if (orders.length === 0) {
+          container.innerHTML = '<p>You have no past orders.</p>';
+          return;
+        }
+
+        let html = '';
+        orders.forEach(order => {
+          let itemsHtml = order.items.map(i => `
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+              <span>${i.product_name} x ${i.quantity}</span>
+              <span>$${i.price}</span>
+            </div>
+          `).join('');
+
+          html += `
+            <div class="order-card fade-in">
+              <div class="order-header">
+                <div>
+                  <strong>Order #${order.id}</strong>
+                  <br><small style="color:var(--text-secondary)">${new Date(order.created_at).toLocaleString()}</small>
+                </div>
+                <div style="text-align:right">
+                  <span style="background:var(--success); color:white; padding:4px 12px; border-radius:12px; font-size:12px;">${order.status}</span>
+                  <br><strong style="font-size:18px; margin-top:4px; display:inline-block;">$${order.total_price}</strong>
+                </div>
+              </div>
+              <div>
+                ${itemsHtml}
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+      } catch (err) {
+        window.showToast(err.message, true);
+        if(err.message === 'Unauthorized') window.location.href = '/login.html';
+      }
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>

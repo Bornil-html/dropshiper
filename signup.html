@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign Up - Nexus</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="/" class="nav-logo">Nexus</a>
+      <div class="nav-links" id="nav-links"></div>
+    </div>
+  </nav>
+
+  <div class="container fade-in">
+    <div class="form-container">
+      <h2>Create Account</h2>
+      <form id="signup-form">
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="email" id="email" placeholder="Email Address" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit" style="width: 100%">Sign Up</button>
+      </form>
+      <p style="text-align: center; margin-top: 20px;">
+        Already have an account? <a href="/login.html" style="color: var(--accent-color)">Sign In</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const btn = e.target.querySelector('button');
+
+      try {
+        btn.disabled = true;
+        btn.innerText = 'Creating...';
+        const res = await window.api.signup({ name, email, password });
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('user', JSON.stringify(res.user));
+        window.showToast('Account created!');
+        setTimeout(() => window.location.href = '/', 1000);
+      } catch (err) {
+        window.showToast(err.message, true);
+        btn.disabled = false;
+        btn.innerText = 'Sign Up';
+      }
+    });
+  </script>
+</body>
+</html>

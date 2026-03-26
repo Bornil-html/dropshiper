@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus - Premium Tech Store</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="/" class="nav-logo">Nexus</a>
+      <div class="nav-links" id="nav-links">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero fade-in">
+    <h1>Welcome to the Future.</h1>
+    <p>Discover premium electronics crafted for you.</p>
+    <div>
+      <a href="/products.html" class="button">Shop Now</a>
+      <a href="#featured" class="button secondary" style="margin-left: 10px;">Explore</a>
+    </div>
+  </section>
+
+  <div class="container fade-in" style="animation-delay: 0.2s;" id="featured">
+    <div class="section">
+      <h2 style="text-align: center; margin-bottom: 40px; font-size: 32px;">Featured Products</h2>
+      <div id="product-grid" class="product-grid">
+        <div class="card skeleton" style="height: 350px;"></div>
+        <div class="card skeleton" style="height: 350px;"></div>
+        <div class="card skeleton" style="height: 350px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    async function loadFeatured() {
+      try {
+        const products = await window.api.getProducts('?featured=true');
+        const grid = document.getElementById('product-grid');
+        grid.innerHTML = '';
+
+        products.forEach(p => {
+          grid.innerHTML += `
+            <div class="card fade-in">
+              <img src="${p.image_url}" alt="${p.name}">
+              <h3>${p.name}</h3>
+              <p class="desc">${p.description}</p>
+              <div class="price">$${p.price}</div>
+              <button onclick="addToCart(${p.id})">Add to Cart</button>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function addToCart(id) {
+      if (!localStorage.getItem('token')) {
+        window.location.href = '/login.html';
+        return;
+      }
+      try {
+        await window.api.addToCart(id);
+        window.showToast('Added to cart!');
+      } catch (err) {
+        window.showToast(err.message, true);
+      }
+    }
+
+    loadFeatured();
+  </script>
+</body>
+</html>

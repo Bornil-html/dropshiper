@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Store - Nexus</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .filter-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="/" class="nav-logo">Nexus</a>
+      <div class="nav-links" id="nav-links"></div>
+    </div>
+  </nav>
+
+  <div class="container section fade-in">
+    <h1 style="margin-bottom: 24px;">Our Products</h1>
+    
+    <div class="filter-bar">
+      <input type="text" id="search-input" placeholder="Search products..." style="flex: 2; margin-bottom: 0;">
+      <select id="category-filter" style="flex: 1; margin-bottom: 0;">
+        <option value="">All Categories</option>
+        <option value="Smartphones">Smartphones</option>
+        <option value="Tablets">Tablets</option>
+        <option value="Headphones">Headphones</option>
+        <option value="Accessories">Accessories</option>
+      </select>
+    </div>
+
+    <div id="product-grid" class="product-grid">
+      <!-- Loader -->
+      <div class="card skeleton" style="height: 350px;"></div>
+      <div class="card skeleton" style="height: 350px;"></div>
+      <div class="card skeleton" style="height: 350px;"></div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const searchInput = document.getElementById('search-input');
+    const catFilter = document.getElementById('category-filter');
+    const grid = document.getElementById('product-grid');
+
+    async function loadProducts() {
+      try {
+        const queryParams = [];
+        if (searchInput.value) queryParams.push(`search=${encodeURIComponent(searchInput.value)}`);
+        if (catFilter.value) queryParams.push(`category=${encodeURIComponent(catFilter.value)}`);
+        
+        const q = queryParams.length ? `?${queryParams.join('&')}` : '';
+        const products = await window.api.getProducts(q);
+        
+        grid.innerHTML = '';
+        if (products.length === 0) {
+          grid.innerHTML = '<p>No products found.</p>';
+          return;
+        }
+
+        products.forEach(p => {
+          grid.innerHTML += `
+            <div class="card fade-in">
+              <img src="${p.image_url}" alt="${p.name}">
+              <h3>${p.name}</h3>
+              <p class="desc">${p.description}</p>
+              <div class="price">$${p.price}</div>
+              <button onclick="addToCart(${p.id})">Add to Cart</button>
+            </div>
+          `;
+        });
+      } catch (err) {
+        window.showToast(err.message, true);
+      }
+    }
+
+    async function addToCart(id) {
+      if (!localStorage.getItem('token')) {
+        window.location.href = '/login.html';
+        return;
+      }
+      try {
+        await window.api.addToCart(id);
+        window.showToast('Added to cart!');
+      } catch (err) {
+        window.showToast(err.message, true);
+      }
+    }
+
+    let timeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(loadProducts, 300);
+    });
+    catFilter.addEventListener('change', loadProducts);
+
+    loadProducts();
+  </script>
+</body>
+</html>

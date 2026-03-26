@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - Nexus</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .admin-container { display: flex; gap: 40px; }
+    .sidebar { width: 250px; background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); height: fit-content;}
+    .sidebar button { width: 100%; margin-bottom: 10px; text-align: left; background:transparent; color: var(--text-primary); border: 1px solid var(--border-color); }
+    .sidebar button.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+    .content { flex: 1; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px;}
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border-color); }
+    th { color: var(--text-secondary); }
+    .badge { padding: 4px 8px; border-radius: 8px; font-size: 12px; }
+    .bg-success { background: var(--success); color: white; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="/" class="nav-logo">Nexus Dashboard</a>
+      <div class="nav-links" id="nav-links"></div>
+    </div>
+  </nav>
+
+  <div class="container section fade-in admin-container">
+    <div class="sidebar">
+      <button class="active" onclick="switchTab('products', this)">📦 Products</button>
+      <button onclick="switchTab('orders', this)">📋 Orders</button>
+    </div>
+
+    <div class="content" id="products-view">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2>Manage Products</h2>
+        <button onclick="showAddProduct()">+ Add Product</button>
+      </div>
+
+      <div class="form-container" style="display:none; margin: 0 0 40px 0; max-width: 100%;" id="product-form-container">
+        <h3>Add New Product</h3>
+        <form id="product-form" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+          <input type="text" id="p-name" placeholder="Product Name" required>
+          <input type="number" id="p-price" placeholder="Price ($)" step="0.01" required>
+          <input type="text" id="p-image" placeholder="Image URL" required>
+          <select id="p-cat" required>
+            <option value="Smartphones">Smartphones</option>
+            <option value="Tablets">Tablets</option>
+            <option value="Headphones">Headphones</option>
+            <option value="Accessories">Accessories</option>
+          </select>
+          <textarea id="p-desc" placeholder="Description" style="grid-column: span 2;" required></textarea>
+          <label style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="p-featured" style="width:auto; margin:0;"> Featured Product
+          </label>
+          <div style="grid-column: span 2; display: flex; justify-content:flex-end; gap:10px;">
+            <button type="button" class="secondary" onclick="document.getElementById('product-form-container').style.display='none'">Cancel</button>
+            <button type="submit">Save Product</button>
+          </div>
+        </form>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Featured</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="admin-products-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="content" id="orders-view" style="display:none;">
+      <h2>User Orders</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Order ID</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th></tr>
+          </thead>
+          <tbody id="admin-orders-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!localStorage.getItem('token')) window.location.href = '/login.html';
+    const userStr = localStorage.getItem('user');
+    if (!userStr || JSON.parse(userStr).role !== 'admin') {
+      document.body.innerHTML = '<div style="padding:100px;text-align:center;"><h1>Access Denied</h1><p>Admin Only.</p><a href="/">Go Back</a></div>';
+    }
+
+    function switchTab(tab, btn) {
+      document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('products-view').style.display = tab === 'products' ? 'block' : 'none';
+      document.getElementById('orders-view').style.display = tab === 'orders' ? 'block' : 'none';
+      
+      if(tab === 'products') loadAdminProducts();
+      else loadAdminOrders();
+    }
+
+    function showAddProduct() {
+      document.getElementById('product-form').reset();
+      document.getElementById('product-form-container').style.display = 'block';
+    }
+
+    document.getElementById('product-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('p-name').value,
+        price: parseFloat(document.getElementById('p-price').value),
+        image_url: document.getElementById('p-image').value,
+        category: document.getElementById('p-cat').value,
+        description: document.getElementById('p-desc').value,
+        is_featured: document.getElementById('p-featured').checked
+      };
+
+      try {
+        await window.api.adminAddProduct(payload);
+        window.showToast('Product added!');
+        document.getElementById('product-form-container').style.display = 'none';
+        loadAdminProducts();
+      } catch (err) {
+        window.showToast(err.message, true);
+      }
+    });
+
+    async function loadAdminProducts() {
+      try {
+        const products = await window.api.adminGetProducts();
+        const tbody = document.getElementById('admin-products-table');
+        tbody.innerHTML = '';
+        products.forEach(p => {
+          tbody.innerHTML += `
+            <tr>
+              <td><img src="${p.image_url}" width="40" height="40" style="object-fit:cover; border-radius:4px;"></td>
+              <td>${p.name}</td>
+              <td>${p.category}</td>
+              <td>$${p.price}</td>
+              <td>${p.is_featured ? 'Yes' : 'No'}</td>
+              <td><button class="remove-btn" style="color:var(--error); border:none; background:none; text-decoration:underline; font-size:14px;" onclick="deleteProduct(${p.id})">Delete</button></td>
+            </tr>
+          `;
+        });
+      } catch (err) { window.showToast(err.message, true); }
+    }
+
+    async function deleteProduct(id) {
+      if(!confirm('Delete this product?')) return;
+      try {
+        await window.api.adminDeleteProduct(id);
+        window.showToast('Product deleted');
+        loadAdminProducts();
+      } catch (err) { window.showToast(err.message, true); }
+    }
+
+    async function loadAdminOrders() {
+      try {
+        const orders = await window.api.adminGetOrders();
+        const tbody = document.getElementById('admin-orders-table');
+        tbody.innerHTML = '';
+        orders.forEach(o => {
+          tbody.innerHTML += `
+            <tr>
+              <td>#${o.id}</td>
+              <td>${o.user_name}<br><small style="color:var(--text-secondary)">${o.user_email}</small></td>
+              <td>${new Date(o.created_at).toLocaleDateString()}</td>
+              <td>$${o.total_price}</td>
+              <td><span class="badge bg-success">${o.status}</span></td>
+            </tr>
+          `;
+        });
+      } catch (err) { window.showToast(err.message, true); }
+    }
+
+    loadAdminProducts();
+  </script>
+</body>
+</html>
