@@ -24,6 +24,6 @@ module.exports = async (req, res) => {
     res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
