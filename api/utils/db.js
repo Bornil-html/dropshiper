@@ -3,23 +3,25 @@ const { Pool } = require('pg');
 let pool;
 
 if (!pool) {
-  if (!process.env.DATABASE_URL) {
-    console.error('CRITICAL: DATABASE_URL is missing!');
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    console.error('CRITICAL ERROR: DATABASE_URL environment variable is MISSING in Vercel settings.');
   }
+  
   pool = new Pool({
-    connectionString: process.env.DATABASE_URL
+    connectionString: connectionString,
+    ssl: { rejectUnauthorized: false },
+    max: 1 // Crucial for Serverless to prevent too many connections to Neon
   });
 }
 
-/**
- * Helper function to query the Postgres database
- */
 const query = async (text, params) => {
-  const client = await pool.connect();
   try {
-    return await client.query(text, params);
-  } finally {
-    client.release();
+    const result = await pool.query(text, params);
+    return result;
+  } catch (err) {
+    console.error('DATABASE QUERY ERROR:', err.message, '| QUERY:', text);
+    throw err;
   }
 };
 
