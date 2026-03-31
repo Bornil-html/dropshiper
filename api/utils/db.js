@@ -3,15 +3,22 @@ const { Pool } = require('pg');
 let pool;
 
 if (!pool) {
-  const connectionString = process.env.DATABASE_URL;
+  let connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     console.error('CRITICAL ERROR: DATABASE_URL environment variable is MISSING in Vercel settings.');
+  } else {
+    // Normalize string: ensure it starts with postgres:// (pg library preference)
+    connectionString = connectionString.replace('postgresql://', 'postgres://');
+    // Ensure it ends with ?sslmode=require if it doesn't have it
+    if (!connectionString.includes('sslmode=')) {
+      connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
+    }
   }
   
   pool = new Pool({
     connectionString: connectionString,
     ssl: { rejectUnauthorized: false },
-    max: 1 // Crucial for Serverless to prevent too many connections to Neon
+    max: 1 
   });
 }
 
