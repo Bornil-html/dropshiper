@@ -5,18 +5,33 @@ const jwt = require('jsonwebtoken');
 let pool;
 if (!pool) {
   let connectionString = process.env.DATABASE_URL;
-  if (connectionString) {
-    connectionString = connectionString.replace('postgresql://', 'postgres://');
-    if (!connectionString.includes('sslmode=')) {
-      connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
-    }
+  if (!connectionString) {
+    throw new Error('CRITICAL: DATABASE_URL is missing in environment variables');
   }
+  
+  // Normalize string: ensure it starts with postgres:// (pg library preference)
+  connectionString = connectionString.replace('postgresql://', 'postgres://');
+  
+  // Ensure it ends with ?sslmode=require if it doesn't have it
+  if (!connectionString.includes('sslmode=')) {
+    connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
+  }
+  
   pool = new Pool({
     connectionString: connectionString,
     ssl: { rejectUnauthorized: false },
-    max: 1 
+    max: 1 // Crucial for Serverless to avoid overwhelming Neon
   });
 }
+
+const query = async (text, params) => {
+  const client = await pool.connect();
+  try {
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+};
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_dropship_key_2026';
 
@@ -27,7 +42,7 @@ module.exports = async (req, res) => {
   if (!email || !password) return res.status(400).json({ message: 'Missing fields' });
 
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await query('SELECT * FROM users WHERE email = $1', [email]);
     
     if (result.rows.length === 0) {
       return res.status(400).json({ message: 'Invalid credentials' });
