@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Store - Nexus</title>
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/ColorBends.css">
   <style>
     .filter-bar {
       display: flex;
@@ -42,8 +43,15 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+  <script src="/js/ColorBends.js"></script>
   <script src="/js/api.js"></script>
   <script>
+    window.initColorBends({
+      colors: ['#0071e3', '#32c45e', '#000000'],
+      opacity: 0.5
+    });
+
     const searchInput = document.getElementById('search-input');
     const catFilter = document.getElementById('category-filter');
     const grid = document.getElementById('product-grid');

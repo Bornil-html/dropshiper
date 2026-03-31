@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nexus - Premium Tech Store</title>
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/ColorBends.css">
 </head>
 
 <body>
@@ -38,8 +39,15 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+  <script src="/js/ColorBends.js"></script>
   <script src="/js/api.js"></script>
   <script>
+    window.initColorBends({
+      colors: ['#0071e3', '#32c45e', '#000000'],
+      opacity: 0.5
+    });
+    
     async function loadFeatured() {
       try {
         const products = await window.api.getProducts('?featured=true');
