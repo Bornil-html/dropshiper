@@ -15,9 +15,20 @@ async function fetchAPI(endpoint, options = {}) {
     headers,
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get('content-type');
+  let data;
+  
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    // If the server crashes, it might return HTML (like a Vercel error page)
+    const text = await response.text();
+    console.error('Server returned non-JSON response:', text);
+    throw new Error('The server did not return a valid JSON response. It might have crashed or not be configured for this endpoint.');
+  }
+
   if (!response.ok) {
-    throw new Error(data.message || 'API request failed');
+    throw new Error(data.message || data.error || 'API request failed');
   }
   return data;
 }
