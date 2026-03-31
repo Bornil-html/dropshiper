@@ -1,11 +1,41 @@
-const { query } = require('../../utils/db');
-const { verifyToken } = require('../../utils/auth');
+const { Pool } = require('pg');
+const jwt = require('jsonwebtoken');
+
+let pool;
+if (!pool) {
+  let connectionString = process.env.DATABASE_URL;
+  if (connectionString) {
+    connectionString = connectionString.replace('postgresql://', 'postgres://');
+    if (!connectionString.includes('sslmode=')) {
+      connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
+    }
+  }
+  pool = new Pool({
+    connectionString: connectionString,
+    ssl: { rejectUnauthorized: false },
+    max: 1 // Crucial for Serverless to avoid overwhelming Neon
+  });
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_dropship_key_2026';
+
+const query = async (text, params) => {
+  const client = await pool.connect();
+  try {
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+};
 
 module.exports = async (req, res) => {
   let user;
   try {
-    user = verifyToken(req);
-    if (user.role !== 'admin') throw new Error('Not admin');
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) throw new Error();
+    const token = authHeader.split(' ')[1];
+    user = jwt.verify(token, JWT_SECRET);
+    if (user.role !== 'admin') throw new Error();
   } catch (err) {
     return res.status(401).json({ message: 'Unauthorized - Admin Only' });
   }
@@ -15,7 +45,7 @@ module.exports = async (req, res) => {
       const result = await query('SELECT * FROM products ORDER BY created_at DESC');
       return res.status(200).json(result.rows);
     } catch (err) {
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Server error', error: err.message });
     }
   }
 
@@ -29,20 +59,18 @@ module.exports = async (req, res) => {
       );
       return res.status(201).json(r.rows[0]);
     } catch (err) {
-      console.log(err);
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Server error', error: err.message });
     }
   }
 
   if (req.method === 'DELETE') {
     const { id } = req.query;
     if (!id) return res.status(400).json({ message: 'Missing product ID' });
-    
     try {
       await query('DELETE FROM products WHERE id = $1', [id]);
       return res.status(200).json({ message: 'Product deleted' });
     } catch (err) {
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Server error', error: err.message });
     }
   }
 
@@ -57,7 +85,7 @@ module.exports = async (req, res) => {
       );
       return res.status(200).json(updated.rows[0]);
     } catch (err) {
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Server error', error: err.message });
     }
   }
 
