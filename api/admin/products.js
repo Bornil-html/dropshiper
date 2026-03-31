@@ -7,13 +7,13 @@ if (!pool) {
   if (connectionString) {
     connectionString = connectionString.replace('postgresql://', 'postgres://');
     if (!connectionString.includes('sslmode=')) {
-      connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
+      connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=verify-full';
     }
   }
   pool = new Pool({
     connectionString: connectionString,
-    ssl: { rejectUnauthorized: false },
-    max: 1 // Crucial for Serverless to avoid overwhelming Neon
+    ssl: { rejectUnauthorized: false }, // Maintain current manual override
+    max: 1 
   });
 }
 
