@@ -1,6 +1,33 @@
-const { query } = require('../../utils/db');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const { generateToken } = require('../../utils/auth');
+const jwt = require('jsonwebtoken');
+
+let pool;
+if (!pool) {
+  let connectionString = process.env.DATABASE_URL;
+  if (connectionString) {
+    connectionString = connectionString.replace('postgresql://', 'postgres://');
+    if (!connectionString.includes('sslmode=')) {
+      connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=verify-full';
+    }
+  }
+  pool = new Pool({
+    connectionString: connectionString,
+    ssl: { rejectUnauthorized: false },
+    max: 1 // Crucial for Serverless to avoid overwhelming Neon
+  });
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_dropship_key_2026';
+
+const query = async (text, params) => {
+  const client = await pool.connect();
+  try {
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+};
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
@@ -19,7 +46,11 @@ module.exports = async (req, res) => {
     );
 
     const user = result.rows[0];
-    const token = generateToken(user);
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
     
     res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {

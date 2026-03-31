@@ -72,11 +72,11 @@ module.exports = async (req, res) => {
     // Seed products
     const prodCount = await query('SELECT COUNT(*) FROM products');
     if (parseInt(prodCount.rows[0].count) === 0) {
-      const seedProducts = [
-        { name: "iPhone 15 Pro Max", desc: "Titanium design, A17 Pro chip.", price: 1199.99, image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569", cat: "Smartphones", feat: true },
-        { name: "Samsung Galaxy S24 Ultra", desc: "AI features, Titanium frame.", price: 1299.99, image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf", cat: "Smartphones", feat: true },
-        { name: "AirPods Pro 2", desc: "Active Noise Cancellation.", price: 249.00, image: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434", cat: "Headphones", feat: true }
-      ];
+        const seedProducts = [
+          { name: "iPhone 15 Pro Max", desc: "Titanium design, A17 Pro chip.", price: 159900.00, image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569", cat: "Smartphones", feat: true },
+          { name: "Samsung Galaxy S24 Ultra", desc: "AI features, Titanium frame.", price: 129999.00, image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf", cat: "Smartphones", feat: true },
+          { name: "AirPods Pro 2", desc: "Active Noise Cancellation.", price: 24900.00, image: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434", cat: "Headphones", feat: true }
+        ];
       for (let p of seedProducts) {
         await query(
           'INSERT INTO products (name, description, price, image_url, category, is_featured) VALUES ($1, $2, $3, $4, $5, $6)',

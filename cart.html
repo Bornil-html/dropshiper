@@ -53,7 +53,7 @@
                 <h3>${item.name}</h3>
                 <p class="desc">${item.category}</p>
                 <div style="margin-top: 10px; display: flex; justify-content: space-between;">
-                  <span>$${item.price} x ${item.quantity}</span>
+                  <span>₹${item.price} x ${item.quantity}</span>
                   <button class="remove-btn" onclick="removeItem(${item.cart_item_id})">Remove</button>
                 </div>
               </div>
@@ -67,12 +67,12 @@
             <h3>Order Summary</h3>
             <div style="display:flex; justify-content:space-between; margin: 20px 0;">
               <span>Subtotal</span>
-              <strong>$${total.toFixed(2)}</strong>
+              <strong>₹${total.toFixed(2)}</strong>
             </div>
             <hr style="border:0; border-top:1px solid var(--border-color); margin-bottom: 20px;">
             <div style="display:flex; justify-content:space-between; margin-bottom: 30px; font-size: 20px; font-weight: bold;">
               <span>Total</span>
-              <span>$${total.toFixed(2)}</span>
+              <span>₹${total.toFixed(2)}</span>
             </div>
             <button style="width: 100%;" onclick="proceedToCheckout(${total.toFixed(2)})">Checkout</button>
           </div>
