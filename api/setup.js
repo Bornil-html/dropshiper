@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { query } = require('./utils/db');
+const { query } = require('../utils/db');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
