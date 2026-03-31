@@ -1,4 +1,27 @@
-const { query } = require('../utils/db');
+const { Pool } = require('pg');
+
+let pool;
+
+if (!pool) {
+  let connectionString = process.env.DATABASE_URL;
+  if (connectionString) {
+    connectionString = connectionString.replace('postgresql://', 'postgres://');
+    if (!connectionString.includes('sslmode=')) {
+      connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
+    }
+  }
+  
+  pool = new Pool({
+    connectionString: connectionString,
+    ssl: { rejectUnauthorized: false },
+    max: 1 
+  });
+}
+
+const query = async (text, params) => {
+  const result = await pool.query(text, params);
+  return result;
+};
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
@@ -36,7 +59,7 @@ module.exports = async (req, res) => {
       res.status(200).json(result.rows);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error', error: err.message });
     }
   } else {
     res.status(405).json({ message: 'Method Not Allowed' });

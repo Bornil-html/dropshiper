@@ -1,6 +1,24 @@
-const { query } = require('../../utils/db');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const { generateToken } = require('../../utils/auth');
+const jwt = require('jsonwebtoken');
+
+let pool;
+if (!pool) {
+  let connectionString = process.env.DATABASE_URL;
+  if (connectionString) {
+    connectionString = connectionString.replace('postgresql://', 'postgres://');
+    if (!connectionString.includes('sslmode=')) {
+      connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
+    }
+  }
+  pool = new Pool({
+    connectionString: connectionString,
+    ssl: { rejectUnauthorized: false },
+    max: 1 
+  });
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_dropship_key_2026';
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
@@ -9,7 +27,7 @@ module.exports = async (req, res) => {
   if (!email || !password) return res.status(400).json({ message: 'Missing fields' });
 
   try {
-    const result = await query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     
     if (result.rows.length === 0) {
       return res.status(400).json({ message: 'Invalid credentials' });
@@ -20,7 +38,12 @@ module.exports = async (req, res) => {
 
     if (!match) return res.status(400).json({ message: 'Invalid credentials' });
 
-    const token = generateToken(user);
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.status(200).json({ 
       token, 
       user: { id: user.id, name: user.name, email: user.email, role: user.role } 
